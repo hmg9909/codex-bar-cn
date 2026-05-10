@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+UPSTREAM_DIR="${ROOT_DIR}/upstream/CodexBar"
+PATCH_FILE="${ROOT_DIR}/patches/codexbar-zh-Hans.patch"
+
+if [[ ! -d "${UPSTREAM_DIR}/.git" ]]; then
+  echo "ERROR: missing upstream checkout at ${UPSTREAM_DIR}" >&2
+  exit 1
+fi
+
+if [[ ! -f "${PATCH_FILE}" ]]; then
+  echo "ERROR: missing patch file at ${PATCH_FILE}" >&2
+  exit 1
+fi
+
+if git -C "${UPSTREAM_DIR}" apply --reverse --check "${PATCH_FILE}" >/dev/null 2>&1; then
+  echo "Chinese patch is already applied."
+  exit 0
+fi
+
+git -C "${UPSTREAM_DIR}" apply --check "${PATCH_FILE}"
+git -C "${UPSTREAM_DIR}" apply "${PATCH_FILE}"
+echo "Applied Chinese patch: ${PATCH_FILE}"

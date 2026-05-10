@@ -1,0 +1,19 @@
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+dist/
+release/
+*.app/
+*.zip
+*.dSYM/
+xcuserdata/
+*.xcuserstate
+
+# Never commit local auth/cache material.
+auth.json
+cookies.json
+*.cookie
+*.keychain
+*.pem
+*.p12

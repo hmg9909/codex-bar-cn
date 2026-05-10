@@ -1,0 +1,870 @@
+diff --git a/Sources/CodexBar/CostHistoryChartMenuView.swift b/Sources/CodexBar/CostHistoryChartMenuView.swift
+index 6dec0676..e6abfd61 100644
+--- a/Sources/CodexBar/CostHistoryChartMenuView.swift
++++ b/Sources/CodexBar/CostHistoryChartMenuView.swift
+@@ -57,7 +57,7 @@ struct CostHistoryChartMenuView: View {
+                     ForEach(model.points) { point in
+                         BarMark(
+                             x: .value("Day", point.date, unit: .day),
+-                            y: .value("Cost", point.costUSD))
++                            y: .value("消耗", point.costUSD))
+                             .foregroundStyle(model.barColor)
+                     }
+                     if let peak = Self.peakPoint(model: model) {
+diff --git a/Sources/CodexBar/MenuCardView.swift b/Sources/CodexBar/MenuCardView.swift
+index 02ab642c..542a6c91 100644
+--- a/Sources/CodexBar/MenuCardView.swift
++++ b/Sources/CodexBar/MenuCardView.swift
+@@ -11,8 +11,8 @@ struct UsageMenuCardView: View {
+ 
+             var labelSuffix: String {
+                 switch self {
+-                case .left: "left"
+-                case .used: "used"
++                case .left: "剩余"
++                case .used: "已用"
+                 }
+             }
+ 
+@@ -177,7 +177,7 @@ struct UsageMenuCardView: View {
+                     }
+                     if let tokenUsage = self.model.tokenUsage {
+                         VStack(alignment: .leading, spacing: 6) {
+-                            Text("Cost")
++                            Text("消耗")
+                                 .font(.body)
+                                 .fontWeight(.medium)
+                             Text(tokenUsage.sessionLine)
+@@ -541,7 +541,7 @@ private struct CreditsBarContent: View {
+ 
+     var body: some View {
+         VStack(alignment: .leading, spacing: 6) {
+-            Text("Credits")
++            Text("余额")
+                 .font(.body)
+                 .fontWeight(.medium)
+             if let percentLeft {
+@@ -589,7 +589,7 @@ struct UsageMenuCardCostSectionView: View {
+                 VStack(alignment: .leading, spacing: 10) {
+                     if let tokenUsage = self.model.tokenUsage {
+                         VStack(alignment: .leading, spacing: 6) {
+-                            Text("Cost")
++                            Text("消耗")
+                                 .font(.body)
+                                 .fontWeight(.medium)
+                             Text(tokenUsage.sessionLine)
+@@ -893,7 +893,7 @@ extension UsageMenuCardView.Model {
+         }
+ 
+         if isRefreshing, snapshot == nil {
+-            return ("Refreshing...", .loading)
++            return ("刷新中...", .loading)
+         }
+ 
+         if let updated = snapshot?.updatedAt {
+@@ -1462,9 +1462,9 @@ extension UsageMenuCardView.Model {
+         let sessionTokens = snapshot.sessionTokens.map { UsageFormatter.tokenCountString($0) }
+         let sessionLine: String = {
+             if let sessionTokens {
+-                return "Today: \(sessionCost) · \(sessionTokens) tokens"
++                return "今天: \(sessionCost) · \(sessionTokens) tokens"
+             }
+-            return "Today: \(sessionCost)"
++            return "今天: \(sessionCost)"
+         }()
+ 
+         let monthCost = snapshot.last30DaysCostUSD.map { UsageFormatter.usdString($0) } ?? "—"
+@@ -1473,9 +1473,9 @@ extension UsageMenuCardView.Model {
+         let monthTokens = monthTokensValue.map { UsageFormatter.tokenCountString($0) }
+         let monthLine: String = {
+             if let monthTokens {
+-                return "Last 30 days: \(monthCost) · \(monthTokens) tokens"
++                return "最近 30 天: \(monthCost) · \(monthTokens) tokens"
+             }
+-            return "Last 30 days: \(monthCost)"
++            return "最近 30 天: \(monthCost)"
+         }()
+         let err = (error?.isEmpty ?? true) ? nil : error
+         return TokenUsageSection(
+diff --git a/Sources/CodexBar/MenuDescriptor.swift b/Sources/CodexBar/MenuDescriptor.swift
+index 4bd442a9..7fc3f883 100644
+--- a/Sources/CodexBar/MenuDescriptor.swift
++++ b/Sources/CodexBar/MenuDescriptor.swift
+@@ -278,27 +278,27 @@ struct MenuDescriptor {
+         let redactedEmail = PersonalInfoRedactor.redactEmail(emailText, isEnabled: hidePersonalInfo)
+ 
+         if let emailText, !emailText.isEmpty {
+-            entries.append(.text("Account: \(redactedEmail)", .secondary))
++            entries.append(.text("账号: \(redactedEmail)", .secondary))
+         }
+         if provider == .kilo {
+             let kiloLogin = self.kiloLoginParts(loginMethod: loginMethodText)
+             if let pass = kiloLogin.pass {
+-                entries.append(.text("Plan: \(AccountFormatter.plan(pass))", .secondary))
++                entries.append(.text("订阅: \(AccountFormatter.plan(pass))", .secondary))
+             }
+             for detail in kiloLogin.details {
+                 entries.append(.text("Activity: \(detail)", .secondary))
+             }
+         } else if let loginMethodText, !loginMethodText.isEmpty {
+-            entries.append(.text("Plan: \(AccountFormatter.plan(loginMethodText))", .secondary))
++            entries.append(.text("订阅: \(AccountFormatter.plan(loginMethodText))", .secondary))
+         }
+ 
+         if metadata.usesAccountFallback {
+             if emailText?.isEmpty ?? true, let fallbackEmail = fallback.email, !fallbackEmail.isEmpty {
+                 let redacted = PersonalInfoRedactor.redactEmail(fallbackEmail, isEnabled: hidePersonalInfo)
+-                entries.append(.text("Account: \(redacted)", .secondary))
++                entries.append(.text("账号: \(redacted)", .secondary))
+             }
+             if loginMethodText?.isEmpty ?? true, let fallbackPlan = fallback.plan, !fallbackPlan.isEmpty {
+-                entries.append(.text("Plan: \(AccountFormatter.plan(fallbackPlan))", .secondary))
++                entries.append(.text("订阅: \(AccountFormatter.plan(fallbackPlan))", .secondary))
+             }
+         }
+ 
+@@ -372,7 +372,7 @@ struct MenuDescriptor {
+             } else {
+                 let loginAction = self.switchAccountTarget(for: provider, store: store)
+                 let hasAccount = self.hasAccount(for: provider, store: store, account: fallbackAccount)
+-                let accountLabel = hasAccount ? "Switch Account..." : "Add Account..."
++                let accountLabel = hasAccount ? "切换账号..." : "添加账号..."
+                 entries.append(.action(accountLabel, loginAction))
+             }
+         }
+@@ -390,10 +390,10 @@ struct MenuDescriptor {
+         }
+ 
+         if metadata?.dashboardURL != nil {
+-            entries.append(.action("Usage Dashboard", .dashboard))
++            entries.append(.action("使用仪表盘", .dashboard))
+         }
+         if metadata?.statusPageURL != nil || metadata?.statusLinkURL != nil {
+-            entries.append(.action("Status Page", .statusPage))
++            entries.append(.action("状态页", .statusPage))
+         }
+ 
+         if let statusLine = self.statusLine(for: provider, store: store) {
+@@ -409,10 +409,10 @@ struct MenuDescriptor {
+             entries.append(.action("Update ready, restart now?", .installUpdate))
+         }
+         entries.append(contentsOf: [
+-            .action("Refresh", .refresh),
+-            .action("Settings...", .settings),
+-            .action("About CodexBar", .about),
+-            .action("Quit", .quit),
++            .action("刷新", .refresh),
++            .action("设置...", .settings),
++            .action("关于 CodexBar", .about),
++            .action("退出", .quit),
+         ])
+         return Section(entries: entries)
+     }
+@@ -424,7 +424,7 @@ struct MenuDescriptor {
+               status.indicator != .none else { return nil }
+ 
+         let description = status.description?.trimmingCharacters(in: .whitespacesAndNewlines)
+-        let label = description?.isEmpty == false ? description! : status.indicator.label
++        let label = DisplayText.zh(status: description?.isEmpty == false ? description! : status.indicator.label)
+         if let updated = status.updatedAt {
+             let freshness = UsageFormatter.updatedString(from: updated)
+             return "\(label) — \(freshness)"
+diff --git a/Sources/CodexBar/OpenAICreditsPurchaseWindowController.swift b/Sources/CodexBar/OpenAICreditsPurchaseWindowController.swift
+index 99ec8eef..ad0ab8e3 100644
+--- a/Sources/CodexBar/OpenAICreditsPurchaseWindowController.swift
++++ b/Sources/CodexBar/OpenAICreditsPurchaseWindowController.swift
+@@ -420,7 +420,7 @@ final class OpenAICreditsPurchaseWindowController: NSWindowController, WKNavigat
+             styleMask: [.titled, .closable, .resizable],
+             backing: .buffered,
+             defer: false)
+-        window.title = "Buy Credits"
++        window.title = "购买余额"
+         window.isReleasedWhenClosed = false
+         window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+         window.contentView = container
+diff --git a/Sources/CodexBar/PreferencesCodexAccountsSection.swift b/Sources/CodexBar/PreferencesCodexAccountsSection.swift
+index 4b09898c..201213da 100644
+--- a/Sources/CodexBar/PreferencesCodexAccountsSection.swift
++++ b/Sources/CodexBar/PreferencesCodexAccountsSection.swift
+@@ -64,9 +64,9 @@ struct CodexAccountsSectionState: Equatable {
+ 
+     var addAccountTitle: String {
+         if self.isAuthenticatingManagedAccount, self.authenticatingManagedAccountID == nil {
+-            return "Adding Account…"
++            return "添加账号中…"
+         }
+-        return "Add Account"
++        return "添加账号"
+     }
+ 
+     func showsLiveBadge(for account: CodexVisibleAccount) -> Bool {
+@@ -113,12 +113,12 @@ struct CodexAccountsSectionState: Equatable {
+            self.isAuthenticatingManagedAccount,
+            self.authenticatingManagedAccountID == accountID
+         {
+-            return "Re-authenticating…"
++            return "重新认证中…"
+         }
+         if account.storedAccountID == nil, self.isAuthenticatingLiveAccount {
+-            return "Re-authenticating…"
++            return "重新认证中…"
+         }
+-        return "Re-auth"
++        return "重新认证"
+     }
+ }
+ 
+@@ -132,11 +132,11 @@ struct CodexAccountsSectionView: View {
+     let addAccount: () -> Void
+ 
+     var body: some View {
+-        ProviderSettingsSection(title: "Accounts") {
++        ProviderSettingsSection(title: "账号") {
+             if let selection = self.activeSelectionBinding {
+                 VStack(alignment: .leading, spacing: 6) {
+                     HStack(alignment: .firstTextBaseline, spacing: 10) {
+-                        Text("Active")
++                        Text("当前使用")
+                             .font(.subheadline.weight(.semibold))
+                             .frame(width: ProviderSettingsMetrics.pickerLabelWidth, alignment: .leading)
+ 
+@@ -152,7 +152,7 @@ struct CodexAccountsSectionView: View {
+                         Spacer(minLength: 0)
+                     }
+ 
+-                    Text("Choose which Codex account CodexBar should follow.")
++                    Text("选择 CodexBar 跟随的 Codex 账号。")
+                         .font(.footnote)
+                         .foregroundStyle(.secondary)
+ 
+@@ -166,7 +166,7 @@ struct CodexAccountsSectionView: View {
+             } else if let account = self.state.singleVisibleAccount {
+                 VStack(alignment: .leading, spacing: 6) {
+                     HStack(alignment: .firstTextBaseline, spacing: 10) {
+-                        Text("Account")
++                        Text("账号")
+                             .font(.subheadline.weight(.semibold))
+                             .frame(width: ProviderSettingsMetrics.pickerLabelWidth, alignment: .leading)
+ 
+@@ -235,7 +235,7 @@ struct CodexAccountsSectionView: View {
+     @ViewBuilder
+     private func systemRow(selection: Binding<String>?) -> some View {
+         HStack(alignment: .firstTextBaseline, spacing: 10) {
+-            Text("System")
++            Text("系统")
+                 .font(.subheadline.weight(.semibold))
+                 .frame(width: ProviderSettingsMetrics.pickerLabelWidth, alignment: .leading)
+ 
+@@ -273,7 +273,7 @@ struct CodexAccountsSectionView: View {
+             Spacer(minLength: 0)
+         }
+ 
+-        Text("The default Codex account on this Mac.")
++        Text("此 Mac 上的默认 Codex 账号。")
+             .font(.footnote)
+             .foregroundStyle(.secondary)
+     }
+@@ -294,7 +294,7 @@ private struct CodexAccountsSectionRowView: View {
+                 Text(self.account.displayName)
+                     .font(.subheadline.weight(.semibold))
+                 if self.showsSystemBadge {
+-                    Text("(System)")
++                    Text("(系统)")
+                         .font(.caption.weight(.semibold))
+                         .foregroundStyle(.secondary)
+                 }
+@@ -312,7 +312,7 @@ private struct CodexAccountsSectionRowView: View {
+             }
+ 
+             if self.account.canRemove {
+-                Button("Remove") {
++                Button("移除") {
+                     self.onRemove()
+                 }
+                 .buttonStyle(.bordered)
+diff --git a/Sources/CodexBar/PreferencesProviderDetailView.swift b/Sources/CodexBar/PreferencesProviderDetailView.swift
+index 5ecff079..682c8faf 100644
+--- a/Sources/CodexBar/PreferencesProviderDetailView.swift
++++ b/Sources/CodexBar/PreferencesProviderDetailView.swift
+@@ -64,7 +64,7 @@ struct ProviderDetailView<SupplementaryContent: View>: View {
+             return nil
+         }
+         guard provider == .openrouter else {
+-            return (label: "Plan", value: rawPlan)
++            return (label: "订阅", value: rawPlan)
+         }
+ 
+         let prefix = "Balance:"
+@@ -106,7 +106,7 @@ struct ProviderDetailView<SupplementaryContent: View>: View {
+                 }
+ 
+                 if self.hasSettings {
+-                    ProviderSettingsSection(title: "Settings") {
++                    ProviderSettingsSection(title: "设置") {
+                         ForEach(self.settingsPickers) { picker in
+                             ProviderSettingsPickerRowView(picker: picker)
+                         }
+@@ -126,7 +126,7 @@ struct ProviderDetailView<SupplementaryContent: View>: View {
+                 }
+ 
+                 if !self.settingsToggles.isEmpty {
+-                    ProviderSettingsSection(title: "Options") {
++                    ProviderSettingsSection(title: "选项") {
+                         ForEach(self.settingsToggles) { toggle in
+                             ProviderSettingsToggleRowView(toggle: toggle)
+                         }
+@@ -147,12 +147,12 @@ struct ProviderDetailView<SupplementaryContent: View>: View {
+     }
+ 
+     private var detailLabelWidth: CGFloat {
+-        var infoLabels = ["State", "Source", "Version", "Updated"]
++        var infoLabels = ["状态", "来源", "版本", "更新时间"]
+         if self.store.status(for: self.provider) != nil {
+-            infoLabels.append("Status")
++            infoLabels.append("状态")
+         }
+         if !self.model.email.isEmpty {
+-            infoLabels.append("Account")
++            infoLabels.append("账号")
+         }
+         if let planRow = Self.planRow(provider: self.provider, planText: self.model.planText) {
+             infoLabels.append(planRow.label)
+@@ -162,13 +162,13 @@ struct ProviderDetailView<SupplementaryContent: View>: View {
+             Self.metricTitle(provider: self.provider, metric: metric)
+         }
+         if self.model.creditsText != nil {
+-            metricLabels.append("Credits")
++            metricLabels.append("余额")
+         }
+         if let providerCost = self.model.providerCost {
+             metricLabels.append(providerCost.title)
+         }
+         if self.model.tokenUsage != nil {
+-            metricLabels.append("Cost")
++            metricLabels.append("消耗")
+         }
+ 
+         let infoWidth = ProviderSettingsMetrics.labelWidth(
+@@ -214,7 +214,7 @@ private struct ProviderDetailHeaderView: View {
+                 }
+                 .buttonStyle(.bordered)
+                 .controlSize(.small)
+-                .help("Refresh")
++                .help("刷新")
+ 
+                 Toggle("", isOn: self.$isEnabled)
+                     .labelsHidden()
+@@ -277,23 +277,23 @@ private struct ProviderDetailInfoGrid: View {
+         let version = self.store.version(for: self.provider) ?? "not detected"
+         let updated = self.updatedText
+         let email = self.model.email
+-        let enabledText = self.isEnabled ? "Enabled" : "Disabled"
++        let enabledText = self.isEnabled ? "已启用" : "已停用"
+ 
+         Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
+-            ProviderDetailInfoRow(label: "State", value: enabledText, labelWidth: self.labelWidth)
+-            ProviderDetailInfoRow(label: "Source", value: source, labelWidth: self.labelWidth)
+-            ProviderDetailInfoRow(label: "Version", value: version, labelWidth: self.labelWidth)
+-            ProviderDetailInfoRow(label: "Updated", value: updated, labelWidth: self.labelWidth)
++            ProviderDetailInfoRow(label: "状态", value: enabledText, labelWidth: self.labelWidth)
++            ProviderDetailInfoRow(label: "来源", value: source, labelWidth: self.labelWidth)
++            ProviderDetailInfoRow(label: "版本", value: version, labelWidth: self.labelWidth)
++            ProviderDetailInfoRow(label: "更新时间", value: updated, labelWidth: self.labelWidth)
+ 
+             if let status {
+                 ProviderDetailInfoRow(
+-                    label: "Status",
+-                    value: status.description ?? status.indicator.label,
++                    label: "状态",
++                    value: DisplayText.zh(status: status.description ?? status.indicator.label),
+                     labelWidth: self.labelWidth)
+             }
+ 
+             if !email.isEmpty {
+-                ProviderDetailInfoRow(label: "Account", value: email, labelWidth: self.labelWidth)
++                ProviderDetailInfoRow(label: "账号", value: email, labelWidth: self.labelWidth)
+             }
+ 
+             if let planRow = ProviderDetailView<EmptyView>.planRow(
+@@ -312,12 +312,12 @@ private struct ProviderDetailInfoGrid: View {
+             return UsageFormatter.updatedString(from: updated)
+         }
+         if self.store.refreshingProviders.contains(self.provider) {
+-            return "Refreshing"
++            return "刷新中"
+         }
+         if self.store.unavailableMessage(for: self.provider) != nil {
+-            return "Unavailable"
++            return "不可用"
+         }
+-        return "Not fetched yet"
++        return "尚未获取"
+     }
+ }
+ 
+@@ -350,7 +350,7 @@ struct ProviderMetricsInlineView: View {
+         let hasProviderCost = self.model.providerCost != nil
+         let hasTokenUsage = self.model.tokenUsage != nil
+         ProviderSettingsSection(
+-            title: "Usage",
++            title: "使用情况",
+             spacing: 8,
+             verticalPadding: 6,
+             horizontalPadding: 0)
+@@ -377,7 +377,7 @@ struct ProviderMetricsInlineView: View {
+ 
+                 if let credits = self.model.creditsText {
+                     ProviderMetricInlineTextRow(
+-                        title: "Credits",
++                        title: "余额",
+                         value: credits,
+                         labelWidth: self.labelWidth)
+                 }
+@@ -391,7 +391,7 @@ struct ProviderMetricsInlineView: View {
+ 
+                 if let tokenUsage = self.model.tokenUsage {
+                     ProviderMetricInlineTextRow(
+-                        title: "Cost",
++                        title: "消耗",
+                         value: tokenUsage.sessionLine,
+                         labelWidth: self.labelWidth)
+                     ProviderMetricInlineTextRow(
+diff --git a/Sources/CodexBar/PreferencesProvidersPane.swift b/Sources/CodexBar/PreferencesProvidersPane.swift
+index 9d916465..e01e5f93 100644
+--- a/Sources/CodexBar/PreferencesProvidersPane.swift
++++ b/Sources/CodexBar/PreferencesProvidersPane.swift
+@@ -303,9 +303,9 @@ struct ProvidersPane: View {
+     func requestManagedCodexAccountRemoval(_ account: CodexVisibleAccount) {
+         guard let accountID = account.storedAccountID else { return }
+         self.activeConfirmation = ProviderSettingsConfirmationState(
+-            title: "Remove Codex account?",
+-            message: "Remove \(account.email) from CodexBar? Its managed Codex home will be deleted.",
+-            confirmTitle: "Remove",
++            title: "移除 Codex 账号？",
++            message: "从 CodexBar 移除 \(account.email)？其托管的 Codex home 将被删除。",
++            confirmTitle: "移除",
+             onConfirm: {
+                 Task { @MainActor in
+                     await self.removeManagedCodexAccount(id: accountID)
+@@ -454,7 +454,7 @@ struct ProvidersPane: View {
+         let options: [ProviderSettingsPickerOption]
+         if provider == .openrouter {
+             options = [
+-                ProviderSettingsPickerOption(id: MenuBarMetricPreference.automatic.rawValue, title: "Automatic"),
++                ProviderSettingsPickerOption(id: MenuBarMetricPreference.automatic.rawValue, title: "自动"),
+                 ProviderSettingsPickerOption(
+                     id: MenuBarMetricPreference.primary.rawValue,
+                     title: "Primary (API key limit)"),
+@@ -462,7 +462,7 @@ struct ProvidersPane: View {
+         } else if provider == .abacus {
+             let metadata = self.store.metadata(for: provider)
+             options = [
+-                ProviderSettingsPickerOption(id: MenuBarMetricPreference.automatic.rawValue, title: "Automatic"),
++                ProviderSettingsPickerOption(id: MenuBarMetricPreference.automatic.rawValue, title: "自动"),
+                 ProviderSettingsPickerOption(
+                     id: MenuBarMetricPreference.primary.rawValue,
+                     title: "Primary (\(metadata.sessionLabel))"),
+@@ -474,7 +474,7 @@ struct ProvidersPane: View {
+             let supportsTertiary = self.settings.menuBarMetricSupportsTertiary(for: provider, snapshot: snapshot)
+             let supportsExtraUsage = self.settings.menuBarMetricSupportsExtraUsage(for: provider, snapshot: snapshot)
+             var metricOptions: [ProviderSettingsPickerOption] = [
+-                ProviderSettingsPickerOption(id: MenuBarMetricPreference.automatic.rawValue, title: "Automatic"),
++                ProviderSettingsPickerOption(id: MenuBarMetricPreference.automatic.rawValue, title: "自动"),
+                 ProviderSettingsPickerOption(
+                     id: MenuBarMetricPreference.primary.rawValue,
+                     title: "Primary (\(metadata.sessionLabel))"),
+@@ -502,8 +502,8 @@ struct ProvidersPane: View {
+         }
+         return ProviderSettingsPickerDescriptor(
+             id: "menuBarMetric",
+-            title: "Menu bar metric",
+-            subtitle: "Choose which window drives the menu bar percent.",
++            title: "菜单栏指标",
++            subtitle: "选择菜单栏百分比使用哪个额度窗口。",
+             binding: Binding(
+                 get: {
+                     self.settings
+diff --git a/Sources/CodexBar/PreferencesView.swift b/Sources/CodexBar/PreferencesView.swift
+index 408a83d6..1f755c3d 100644
+--- a/Sources/CodexBar/PreferencesView.swift
++++ b/Sources/CodexBar/PreferencesView.swift
+@@ -16,10 +16,10 @@ enum PreferencesTab: String, CaseIterable, Hashable {
+     var title: String {
+         switch self {
+         case .general: "General"
+-        case .providers: "Providers"
+-        case .display: "Display"
+-        case .advanced: "Advanced"
+-        case .about: "About"
++        case .providers: "提供商"
++        case .display: "显示"
++        case .advanced: "高级"
++        case .about: "关于"
+         case .debug: "Debug"
+         }
+     }
+@@ -75,19 +75,19 @@ struct PreferencesView: View {
+                 store: self.store,
+                 managedCodexAccountCoordinator: self.managedCodexAccountCoordinator,
+                 codexAccountPromotionCoordinator: self.codexAccountPromotionCoordinator)
+-                .tabItem { Label("Providers", systemImage: "square.grid.2x2") }
++                .tabItem { Label("提供商", systemImage: "square.grid.2x2") }
+                 .tag(PreferencesTab.providers)
+ 
+             DisplayPane(settings: self.settings, store: self.store)
+-                .tabItem { Label("Display", systemImage: "eye") }
++                .tabItem { Label("显示", systemImage: "eye") }
+                 .tag(PreferencesTab.display)
+ 
+             AdvancedPane(settings: self.settings)
+-                .tabItem { Label("Advanced", systemImage: "slider.horizontal.3") }
++                .tabItem { Label("高级", systemImage: "slider.horizontal.3") }
+                 .tag(PreferencesTab.advanced)
+ 
+             AboutPane(updater: self.updater)
+-                .tabItem { Label("About", systemImage: "info.circle") }
++                .tabItem { Label("关于", systemImage: "info.circle") }
+                 .tag(PreferencesTab.about)
+ 
+             if self.settings.debugMenuEnabled {
+diff --git a/Sources/CodexBar/Providers/Codex/CodexProviderImplementation.swift b/Sources/CodexBar/Providers/Codex/CodexProviderImplementation.swift
+index 9a39c3af..a1bdba89 100644
+--- a/Sources/CodexBar/Providers/Codex/CodexProviderImplementation.swift
++++ b/Sources/CodexBar/Providers/Codex/CodexProviderImplementation.swift
+@@ -74,8 +74,8 @@ struct CodexProviderImplementation: ProviderImplementation {
+         return [
+             ProviderSettingsToggleDescriptor(
+                 id: "codex-historical-tracking",
+-                title: "Historical tracking",
+-                subtitle: "Stores local Codex usage history (8 weeks) to personalize Pace predictions.",
++                title: "历史跟踪",
++                subtitle: "保存本地 Codex 使用历史（8 周），用于个性化预测用尽时间。",
+                 binding: context.boolBinding(\.historicalTrackingEnabled),
+                 statusText: nil,
+                 actions: [],
+@@ -85,10 +85,10 @@ struct CodexProviderImplementation: ProviderImplementation {
+                 onAppearWhenEnabled: nil),
+             ProviderSettingsToggleDescriptor(
+                 id: "codex-openai-web-extras",
+-                title: "OpenAI web extras",
++                title: "OpenAI 网页增强",
+                 subtitle: [
+-                    "Optional.",
+-                    "Turn this on to show code review, usage breakdown, and credits history via chatgpt.com.",
++                    "可选。",
++                    "开启后通过 chatgpt.com 显示代码审查额度、用量明细和余额历史。",
+                 ].joined(separator: " "),
+                 binding: extrasBinding,
+                 statusText: nil,
+@@ -146,8 +146,8 @@ struct CodexProviderImplementation: ProviderImplementation {
+         return [
+             ProviderSettingsPickerDescriptor(
+                 id: "codex-usage-source",
+-                title: "Usage source",
+-                subtitle: "Auto falls back to the next source if the preferred one fails.",
++                title: "用量来源",
++                subtitle: "首选来源失败时，自动切换到下一个来源。",
+                 binding: usageBinding,
+                 options: usageOptions,
+                 isVisible: nil,
+@@ -199,7 +199,7 @@ struct CodexProviderImplementation: ProviderImplementation {
+         else { return }
+ 
+         if let credits = context.store.credits {
+-            entries.append(.text("Credits: \(UsageFormatter.creditsString(from: credits.remaining))", .primary))
++            entries.append(.text("余额: \(UsageFormatter.creditsString(from: credits.remaining))", .primary))
+             if let latest = credits.events.first {
+                 entries.append(.text("Last spend: \(UsageFormatter.creditEventSummary(latest))", .secondary))
+             }
+@@ -213,7 +213,7 @@ struct CodexProviderImplementation: ProviderImplementation {
+     func loginMenuAction(context _: ProviderMenuLoginContext)
+         -> (label: String, action: MenuDescriptor.MenuAction)?
+     {
+-        ("Add Account...", .addCodexAccount)
++        ("添加账号...", .addCodexAccount)
+     }
+ 
+     @MainActor
+@@ -237,7 +237,7 @@ struct CodexProviderImplementation: ProviderImplementation {
+         }
+ 
+         entries.append(.submenu(
+-            "System Account",
++            "系统账号",
+             MenuDescriptor.MenuActionSystemImage.systemAccount.rawValue,
+             submenuItems))
+     }
+diff --git a/Sources/CodexBar/SettingsStore.swift b/Sources/CodexBar/SettingsStore.swift
+index 6d3e76e4..930b2477 100644
+--- a/Sources/CodexBar/SettingsStore.swift
++++ b/Sources/CodexBar/SettingsStore.swift
+@@ -52,7 +52,7 @@ enum MenuBarMetricPreference: String, CaseIterable, Identifiable {
+ 
+     var label: String {
+         switch self {
+-        case .automatic: "Automatic"
++        case .automatic: "自动"
+         case .primary: "Primary"
+         case .secondary: "Secondary"
+         case .tertiary: "Tertiary"
+diff --git a/Sources/CodexBar/StatusItemController+Menu.swift b/Sources/CodexBar/StatusItemController+Menu.swift
+index 9d03f140..c2e8c6e2 100644
+--- a/Sources/CodexBar/StatusItemController+Menu.swift
++++ b/Sources/CodexBar/StatusItemController+Menu.swift
+@@ -1211,7 +1211,7 @@ extension StatusItemController {
+     }
+ 
+     private func makeBuyCreditsItem() -> NSMenuItem {
+-        let item = NSMenuItem(title: "Buy Credits...", action: #selector(self.openCreditsPurchase), keyEquivalent: "")
++        let item = NSMenuItem(title: "购买余额...", action: #selector(self.openCreditsPurchase), keyEquivalent: "")
+         item.target = self
+         if let image = NSImage(systemSymbolName: "plus.circle", accessibilityDescription: nil) {
+             image.isTemplate = true
+@@ -1224,7 +1224,7 @@ extension StatusItemController {
+     @discardableResult
+     private func addCreditsHistorySubmenu(to menu: NSMenu) -> Bool {
+         guard let submenu = self.makeCreditsHistorySubmenu() else { return false }
+-        let item = NSMenuItem(title: "Credits history", action: nil, keyEquivalent: "")
++        let item = NSMenuItem(title: "余额历史", action: nil, keyEquivalent: "")
+         item.isEnabled = true
+         item.submenu = submenu
+         menu.addItem(item)
+@@ -1234,7 +1234,7 @@ extension StatusItemController {
+     @discardableResult
+     private func addUsageBreakdownSubmenu(to menu: NSMenu) -> Bool {
+         guard let submenu = self.makeUsageBreakdownSubmenu() else { return false }
+-        let item = NSMenuItem(title: "Usage breakdown", action: nil, keyEquivalent: "")
++        let item = NSMenuItem(title: "用量明细", action: nil, keyEquivalent: "")
+         item.isEnabled = true
+         item.submenu = submenu
+         menu.addItem(item)
+diff --git a/Sources/CodexBar/StatusItemController+UsageHistoryMenu.swift b/Sources/CodexBar/StatusItemController+UsageHistoryMenu.swift
+index 6cfed420..93f2757d 100644
+--- a/Sources/CodexBar/StatusItemController+UsageHistoryMenu.swift
++++ b/Sources/CodexBar/StatusItemController+UsageHistoryMenu.swift
+@@ -14,7 +14,7 @@ extension StatusItemController {
+         guard let submenu = self.makeUsageHistorySubmenu(provider: provider) else { return false }
+         let item = self.makeMenuCardItem(
+             HStack(spacing: 0) {
+-                Text("Subscription Utilization")
++                Text("订阅使用情况")
+                     .font(.system(size: NSFont.menuFont(ofSize: 0).pointSize))
+                     .lineLimit(1)
+                     .frame(maxWidth: .infinity, alignment: .leading)
+diff --git a/Sources/CodexBar/UsagePaceText.swift b/Sources/CodexBar/UsagePaceText.swift
+index 94d1ed56..1ec6a613 100644
+--- a/Sources/CodexBar/UsagePaceText.swift
++++ b/Sources/CodexBar/UsagePaceText.swift
+@@ -12,9 +12,9 @@ enum UsagePaceText {
+     static func weeklySummary(pace: UsagePace, now: Date = .init()) -> String {
+         let detail = self.weeklyDetail(pace: pace, now: now)
+         if let rightLabel = detail.rightLabel {
+-            return "Pace: \(detail.leftLabel) · \(rightLabel)"
++            return "节奏: \(detail.leftLabel) · \(rightLabel)"
+         }
+-        return "Pace: \(detail.leftLabel)"
++        return "节奏: \(detail.leftLabel)"
+     }
+ 
+     static func weeklyDetail(pace: UsagePace, now: Date = .init()) -> WeeklyDetail {
+@@ -29,28 +29,28 @@ enum UsagePaceText {
+         let deltaValue = Int(abs(pace.deltaPercent).rounded())
+         switch pace.stage {
+         case .onTrack:
+-            return "On pace"
++            return "节奏正常"
+         case .slightlyAhead, .ahead, .farAhead:
+-            return "\(deltaValue)% in deficit"
++            return "\(deltaValue)% 已超额"
+         case .slightlyBehind, .behind, .farBehind:
+-            return "\(deltaValue)% in reserve"
++            return "\(deltaValue)% 有余量"
+         }
+     }
+ 
+     private static func detailRightLabel(for pace: UsagePace, now: Date) -> String? {
+         let etaLabel: String?
+         if pace.willLastToReset {
+-            etaLabel = "Lasts until reset"
++            etaLabel = "可持续到重置"
+         } else if let etaSeconds = pace.etaSeconds {
+             let etaText = Self.durationText(seconds: etaSeconds, now: now)
+-            etaLabel = etaText == "now" ? "Runs out now" : "Runs out in \(etaText)"
++            etaLabel = etaText == "现在" ? "现在用尽" : "预计 \(etaText) 后用尽"
+         } else {
+             etaLabel = nil
+         }
+ 
+         guard let runOutProbability = pace.runOutProbability else { return etaLabel }
+         let roundedRisk = self.roundedRiskPercent(runOutProbability)
+-        let riskLabel = "≈ \(roundedRisk)% run-out risk"
++        let riskLabel = "约 \(roundedRisk)% 用尽风险"
+         if let etaLabel {
+             return "\(etaLabel) · \(riskLabel)"
+         }
+@@ -60,8 +60,8 @@ enum UsagePaceText {
+     private static func durationText(seconds: TimeInterval, now: Date) -> String {
+         let date = now.addingTimeInterval(seconds)
+         let countdown = UsageFormatter.resetCountdownDescription(from: date, now: now)
+-        if countdown == "now" { return "now" }
+-        if countdown.hasPrefix("in ") { return String(countdown.dropFirst(3)) }
++        if countdown == "现在" { return "现在" }
++        if countdown.hasSuffix(" 后") { return String(countdown.dropLast(" 后".count)) }
+         return countdown
+     }
+ 
+diff --git a/Sources/CodexBar/UsageStoreSupport.swift b/Sources/CodexBar/UsageStoreSupport.swift
+index 52241689..06a38f8f 100644
+--- a/Sources/CodexBar/UsageStoreSupport.swift
++++ b/Sources/CodexBar/UsageStoreSupport.swift
+@@ -18,12 +18,12 @@ enum ProviderStatusIndicator: String {
+ 
+     var label: String {
+         switch self {
+-        case .none: "Operational"
+-        case .minor: "Partial outage"
+-        case .major: "Major outage"
+-        case .critical: "Critical issue"
+-        case .maintenance: "Maintenance"
+-        case .unknown: "Status unknown"
++        case .none: "正常运行"
++        case .minor: "部分中断"
++        case .major: "重大中断"
++        case .critical: "严重问题"
++        case .maintenance: "维护中"
++        case .unknown: "状态未知"
+         }
+     }
+ }
+diff --git a/Sources/CodexBarCore/Providers/Codex/CodexProviderDescriptor.swift b/Sources/CodexBarCore/Providers/Codex/CodexProviderDescriptor.swift
+index 202baa60..d4cb2966 100644
+--- a/Sources/CodexBarCore/Providers/Codex/CodexProviderDescriptor.swift
++++ b/Sources/CodexBarCore/Providers/Codex/CodexProviderDescriptor.swift
+@@ -10,12 +10,12 @@ public enum CodexProviderDescriptor {
+             metadata: ProviderMetadata(
+                 id: .codex,
+                 displayName: "Codex",
+-                sessionLabel: "Session",
+-                weeklyLabel: "Weekly",
++                sessionLabel: "5 小时额度",
++                weeklyLabel: "每周额度",
+                 opusLabel: nil,
+                 supportsOpus: false,
+                 supportsCredits: true,
+-                creditsHint: "Credits unavailable; keep Codex running to refresh.",
++                creditsHint: "余额暂不可用；保持 Codex 运行以刷新。",
+                 toggleTitle: "Show Codex usage",
+                 cliName: "codex",
+                 defaultEnabled: true,
+diff --git a/Sources/CodexBarCore/Providers/Codex/CodexUsageDataSource.swift b/Sources/CodexBarCore/Providers/Codex/CodexUsageDataSource.swift
+index b3bb16cd..ea233797 100644
+--- a/Sources/CodexBarCore/Providers/Codex/CodexUsageDataSource.swift
++++ b/Sources/CodexBarCore/Providers/Codex/CodexUsageDataSource.swift
+@@ -11,7 +11,7 @@ public enum CodexUsageDataSource: String, CaseIterable, Identifiable, Sendable {
+ 
+     public var displayName: String {
+         switch self {
+-        case .auto: "Auto"
++        case .auto: "自动"
+         case .oauth: "OAuth API"
+         case .cli: "CLI (RPC/PTY)"
+         }
+diff --git a/Sources/CodexBarCore/UsageFormatter.swift b/Sources/CodexBarCore/UsageFormatter.swift
+index 85c011d6..4ef375c2 100644
+--- a/Sources/CodexBarCore/UsageFormatter.swift
++++ b/Sources/CodexBarCore/UsageFormatter.swift
+@@ -9,13 +9,13 @@ public enum UsageFormatter {
+     public static func usageLine(remaining: Double, used: Double, showUsed: Bool) -> String {
+         let percent = showUsed ? used : remaining
+         let clamped = min(100, max(0, percent))
+-        let suffix = showUsed ? "used" : "left"
++        let suffix = showUsed ? "已用" : "剩余"
+         return String(format: "%.0f%% %@", clamped, suffix)
+     }
+ 
+     public static func resetCountdownDescription(from date: Date, now: Date = .init()) -> String {
+         let seconds = max(0, date.timeIntervalSince(now))
+-        if seconds < 1 { return "now" }
++        if seconds < 1 { return "现在" }
+ 
+         let totalMinutes = max(1, Int(ceil(seconds / 60.0)))
+         let days = totalMinutes / (24 * 60)
+@@ -23,14 +23,14 @@ public enum UsageFormatter {
+         let minutes = totalMinutes % 60
+ 
+         if days > 0 {
+-            if hours > 0 { return "in \(days)d \(hours)h" }
+-            return "in \(days)d"
++            if hours > 0 { return "\(days)d \(hours)h 后" }
++            return "\(days)d 后"
+         }
+         if hours > 0 {
+-            if minutes > 0 { return "in \(hours)h \(minutes)m" }
+-            return "in \(hours)h"
++            if minutes > 0 { return "\(hours)h \(minutes)m 后" }
++            return "\(hours)h 后"
+         }
+-        return "in \(totalMinutes)m"
++        return "\(totalMinutes)m 后"
+     }
+ 
+     public static func resetDescription(from date: Date, now: Date = .init()) -> String {
+@@ -56,14 +56,17 @@ public enum UsageFormatter {
+             let text = style == .countdown
+                 ? self.resetCountdownDescription(from: date, now: now)
+                 : self.resetDescription(from: date, now: now)
+-            return "Resets \(text)"
++            return "\(text)重置"
+         }
+ 
+         if let desc = window.resetDescription {
+             let trimmed = desc.trimmingCharacters(in: .whitespacesAndNewlines)
+             guard !trimmed.isEmpty else { return nil }
++            if trimmed.lowercased().hasPrefix("resets in ") {
++                return "\(trimmed.dropFirst("Resets in ".count)) 后重置"
++            }
+             if trimmed.lowercased().hasPrefix("resets") { return trimmed }
+-            return "Resets \(trimmed)"
++            return "\(trimmed) 后重置"
+         }
+         return nil
+     }
+@@ -71,24 +74,24 @@ public enum UsageFormatter {
+     public static func updatedString(from date: Date, now: Date = .init()) -> String {
+         let delta = now.timeIntervalSince(date)
+         if abs(delta) < 60 {
+-            return "Updated just now"
++            return "刚刚更新"
+         }
+         if let hours = Calendar.current.dateComponents([.hour], from: date, to: now).hour, hours < 24 {
+             #if os(macOS)
+             let rel = RelativeDateTimeFormatter()
+             rel.unitsStyle = .abbreviated
+-            return "Updated \(rel.localizedString(for: date, relativeTo: now))"
++            return "更新于 \(rel.localizedString(for: date, relativeTo: now))"
+             #else
+             let seconds = max(0, Int(now.timeIntervalSince(date)))
+             if seconds < 3600 {
+                 let minutes = max(1, seconds / 60)
+-                return "Updated \(minutes)m ago"
++                return "更新于 \(minutes)m 前"
+             }
+             let wholeHours = max(1, seconds / 3600)
+-            return "Updated \(wholeHours)h ago"
++            return "更新于 \(wholeHours)h 前"
+             #endif
+         } else {
+-            return "Updated \(date.formatted(date: .omitted, time: .shortened))"
++            return "更新于 \(date.formatted(date: .omitted, time: .shortened))"
+         }
+     }
+ 
+@@ -99,7 +102,7 @@ public enum UsageFormatter {
+         // Use explicit locale for consistent formatting on all systems
+         number.locale = Locale(identifier: "en_US_POSIX")
+         let formatted = number.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
+-        return "\(formatted) left"
++        return "\(formatted) 剩余"
+     }
+ 
+     /// Formats a USD value with proper negative handling and thousand separators.
