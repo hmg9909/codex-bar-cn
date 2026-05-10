@@ -374,7 +374,7 @@ private enum RPCWireError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .startFailed(message):
-            "Codex not running. Try running a Codex command first. (\(message))"
+            "Codex 未运行。请先运行一次 Codex 命令。（\(message)）"
         case let .requestFailed(message):
             "Codex connection failed: \(message)"
         case let .malformed(message):
@@ -438,7 +438,7 @@ private final class CodexRPCClient: @unchecked Sendable {
         guard let resolvedExec else {
             Self.log.warning("Codex RPC binary not found", metadata: ["binary": executable])
             throw RPCWireError.startFailed(
-                "Codex CLI not found. Install with `npm i -g @openai/codex` (or bun) then relaunch CodexBar.")
+                "未找到 Codex CLI。请先用 `npm i -g @openai/codex`（或 bun）安装，然后重启 CodexBar。")
         }
         var env = environment
         env["PATH"] = PathBuilder.effectivePATH(

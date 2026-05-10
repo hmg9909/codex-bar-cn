@@ -98,6 +98,7 @@ git --version
 ## 维护原则
 
 - 只改展示层文案。
+- 菜单栏弹窗里直接展示给用户的 Codex 错误提示也属于展示层文案，需要翻译。
 - 不改额度读取、账号切换、OAuth、Keychain、cookie、网络请求、CLI RPC、PTY fallback 等核心逻辑。
 - 不提交 token、cookie、auth.json、Keychain 数据、缓存文件或构建缓存。
 - 上游更新后，重新应用 patch，冲突只在展示层解决。

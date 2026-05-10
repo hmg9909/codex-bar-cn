@@ -5,8 +5,13 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UPSTREAM_DIR="${ROOT_DIR}/upstream/CodexBar"
 PATCH_FILE="${ROOT_DIR}/patches/codexbar-zh-Hans.patch"
 
-if [[ ! -d "${UPSTREAM_DIR}/.git" ]]; then
-  echo "ERROR: missing upstream checkout at ${UPSTREAM_DIR}" >&2
+if [[ ! -d "${UPSTREAM_DIR}" ]]; then
+  echo "ERROR: missing upstream source at ${UPSTREAM_DIR}" >&2
+  exit 1
+fi
+
+if ! git -C "${UPSTREAM_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "ERROR: ${UPSTREAM_DIR} is not inside a git worktree." >&2
   exit 1
 fi
 

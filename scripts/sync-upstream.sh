@@ -6,6 +6,12 @@ UPSTREAM_DIR="${ROOT_DIR}/upstream/CodexBar"
 UPSTREAM_URL="${UPSTREAM_URL:-https://github.com/steipete/CodexBar.git}"
 UPSTREAM_REF="${UPSTREAM_REF:-main}"
 
+if [[ -d "${UPSTREAM_DIR}" && ! -d "${UPSTREAM_DIR}/.git" ]]; then
+  BACKUP_DIR="${UPSTREAM_DIR}.snapshot.$(date +%Y%m%d%H%M%S)"
+  mv "${UPSTREAM_DIR}" "${BACKUP_DIR}"
+  echo "Moved source snapshot to ${BACKUP_DIR}"
+fi
+
 if [[ ! -d "${UPSTREAM_DIR}/.git" ]]; then
   mkdir -p "$(dirname "${UPSTREAM_DIR}")"
   git clone "${UPSTREAM_URL}" "${UPSTREAM_DIR}"

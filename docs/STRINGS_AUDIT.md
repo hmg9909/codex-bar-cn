@@ -73,8 +73,10 @@ Scope: menu bar popup main UI and Settings -> Providers -> Codex. No auth, Keych
 | Stores local Codex usage history (8 weeks) to personalize Pace predictions. | 保存本地 Codex 使用历史（8 周），用于个性化预测用尽时间。 | covered |
 | OpenAI web extras | OpenAI 网页增强 | covered |
 | Optional. Turn this on to show code review, usage breakdown, and credits history via chatgpt.com. | 可选。开启后通过 chatgpt.com 显示代码审查额度、用量明细和余额历史。 | covered |
+| Codex not running. Try running a Codex command first. | Codex 未运行。请先运行一次 Codex 命令。 | covered |
+| Codex CLI not found. Install with `npm i -g @openai/codex` (or bun) then relaunch CodexBar. | 未找到 Codex CLI。请先用 `npm i -g @openai/codex`（或 bun）安装，然后重启 CodexBar。 | covered |
 
 ## Not Covered
 
-- Same generic words in unrelated panes/providers, tests, docs, CLI output, parser literals, logs, widgets, and accessibility labels are intentionally left English unless they are part of the scoped menu popup or Settings -> Providers -> Codex path.
+- Same generic words in unrelated panes/providers, tests, docs, parser literals, logs, widgets, and accessibility labels are intentionally left English unless they are part of the scoped menu popup or Settings -> Providers -> Codex path.
 - Dynamic service incident text other than the known `Partial System Degradation` phrase is left as returned by the upstream status provider.
